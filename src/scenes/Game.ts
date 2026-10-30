@@ -5,9 +5,10 @@ import { Hud } from '../objects/Hud';
 import { Dog } from '../objects/Dog';
 import { Duck } from '../objects/Duck';
 import { Pumpkin } from '../objects/Pumpkin';
+import { Particles } from '../objects/Particles';
 import { computeLayout, type Layout } from '../gfx/background';
 import { DUCK_KINDS } from '../gfx/art';
-import { DEPTH, COL, txt, centerX, MessageBox, Button, inside, box, type Hit } from '../ui';
+import { DEPTH, COL, txt, centerX, MessageBox, Button, inside, box, fade, type Hit } from '../ui';
 import { audio } from '../audio/audio';
 import { ROUND_START, ROUND_CLEAR, PERFECT, GAME_OVER } from '../audio/songs';
 import { save, persist, reducedMotion, type Mode } from '../state';
@@ -26,14 +27,6 @@ export function requiredHits(round: number): number {
 
 const band = (r: number) => (r <= 5 ? 0 : r <= 10 ? 1 : 2);
 
-interface Particle {
-  img: Phaser.GameObjects.Image;
-  vx: number;
-  vy: number;
-  g: number;
-  life: number;
-  max: number;
-}
 
 export class GameScene extends Phaser.Scene {
   private mode: Mode = 'A';
@@ -61,10 +54,10 @@ export class GameScene extends Phaser.Scene {
   private pauseG!: Phaser.GameObjects.Graphics;
   private cross!: Phaser.GameObjects.Image;
   private flash!: Phaser.GameObjects.Rectangle;
-  private particles: Particle[] = [];
-  private pool: Phaser.GameObjects.Image[] = [];
+  private fxp!: Particles;
   private lastShot = 0;
   private tapHint: Phaser.GameObjects.BitmapText | null = null;
+  private hitStop = 0;
 
   constructor() {
     super('game');
@@ -76,8 +69,6 @@ export class GameScene extends Phaser.Scene {
     this.score = 0;
     this.phase = 'idle';
     this.targets = [];
-    this.particles = [];
-    this.pool = [];
     this.paused = false;
     this.pauseUi = [];
     this.pauseBtns = [];
@@ -87,6 +78,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.L = computeLayout(this.scale.width, this.scale.height);
     this.bg = new Backdrop(this);
+    this.fxp = new Particles(this);
     this.bg.onOwl = () => audio.owl();
     this.hud = new Hud(this, this.mode === 'C' ? 'hudPumpkin' : 'hudDuck');
     this.dog = new Dog(this);
@@ -117,7 +109,9 @@ export class GameScene extends Phaser.Scene {
       this.targets.forEach((t) => t.destroy());
       this.anims.resumeAll();
     });
-    this.hud.setScore(0);
+    this.hud.setScore(0, true);
+    this.dog.fx = (kind, x, y) => (kind === 'grass' ? this.fxp.grass(x, y) : this.fxp.dust(x, y));
+    fade(this, 'in');
     void this.run(++this.gen);
   }
 
@@ -147,10 +141,17 @@ export class GameScene extends Phaser.Scene {
     return gen === this.gen;
   }
 
-  private emit(x: number, y: number, color: number, vx: number, vy: number, life: number, g = 0, size = 1): void {
-    const img = this.pool.pop() ?? this.add.image(0, 0, 'pix').setOrigin(0);
-    img.setPosition(Math.round(x), Math.round(y)).setTint(color).setDisplaySize(size, size).setAlpha(1).setVisible(true).setDepth(DEPTH.duck - 1);
-    this.particles.push({ img, vx, vy, g, life, max: life });
+  private emit(x: number, y: number, color: number, vx: number, vy: number, life: number, g = 0, size = 1, depth: number = DEPTH.duck - 1): void {
+    this.fxp.emit(x, y, color, vx, vy, life, g, size, depth);
+  }
+
+  private grassBurst(x: number, y: number, n = 9): void {
+    this.fxp.grass(x, y, n);
+  }
+
+  private feathers(d: Duck): void {
+    const pal = d.kind.pal;
+    this.fxp.feathers(d.x, d.y, [pal.D, pal.M, pal.L, pal.H, '#FCFCFC']);
   }
 
   private popScore(x: number, y: number, pts: number): void {
@@ -218,6 +219,13 @@ export class GameScene extends Phaser.Scene {
     }
     const bang = this.add.image(Math.round(x), Math.round(y), 'bang').setDepth(DEPTH.fx);
     this.tweens.add({ targets: bang, alpha: 0, duration: 140, onComplete: () => bang.destroy() });
+    this.fxp.ring(x, y, 0xfcfcfc);
+    audio.tink();
+    this.bg.scare(x, y);
+    if (!touch) {
+      this.cross.setTint(COL.orange);
+      this.time.delayedCall(90, () => this.cross.clearTint());
+    }
 
     const pad = touch ? 7 : 3;
     let best: Target | null = null;
@@ -230,13 +238,30 @@ export class GameScene extends Phaser.Scene {
       }
     }
     if (!best) {
+      // a miss still lands somewhere
+      if (y >= this.L.grassTop + 4) {
+        this.grassBurst(x, Math.min(y, this.L.dirtTop - 2), 6);
+        audio.rustle();
+      } else {
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2 + Math.random();
+          this.emit(x, y, 0xb8b0e8, Math.cos(a) * 60, Math.sin(a) * 60, 0.18, 0, 1, DEPTH.fx);
+        }
+      }
       if (this.shots === 0) this.outT = 0.001;
       return;
     }
     audio.hitDuck();
+    try {
+      navigator.vibrate?.([20, 30, 35]);
+    } catch {
+      /* not allowed */
+    }
     if (best instanceof Duck) {
       const pts = best.kind.points[band(this.round)];
       best.shoot();
+      this.hitStop = 0.07;
+      this.feathers(best);
       this.addScore(pts);
       this.popScore(best.x, best.y + 12, pts);
       // a little soul escapes
@@ -320,7 +345,8 @@ export class GameScene extends Phaser.Scene {
     this.setPaused(false);
     this.recordTop();
     audio.stopMusic();
-    this.scene.start('title', { mode: this.mode });
+    this.phase = 'over';
+    fade(this, 'out', () => this.scene.start('title', { mode: this.mode }));
   }
 
   private recordTop(): void {
@@ -399,6 +425,10 @@ export class GameScene extends Phaser.Scene {
         const x = L.W * (0.2 + Math.random() * 0.6);
         const d = new Duck(this, kind, x, L.dirtTop - 8, DUCK_KINDS[kind].speed * mult, L);
         d.onTrail = (tx, ty, c) => this.emit(tx + (Math.random() * 4 - 2), ty, c, 0, -6, 0.5);
+        d.onLand = (dd) => {
+          this.grassBurst(dd.landX, this.L.dirtTop - 16, 12);
+          audio.rustle();
+        };
         this.targets.push(d);
       }
       this.flyTime = Math.max(3.8, 6.5 - 0.18 * (r - 1)) + (per === 2 ? 1.2 : 0);
@@ -420,7 +450,7 @@ export class GameScene extends Phaser.Scene {
     const hits = this.targets.filter((t) => (t instanceof Duck ? t.state === 'down' : t.state === 'hit'));
     this.targets.forEach((t, k) => {
       const i = idx + k;
-      if (i < 10) this.hud.states[i] = hits.includes(t) ? 1 : 2;
+      this.hud.setState(i, hits.includes(t) ? 1 : 2);
     });
     await wait(this, 350);
     if (!this.alive(gen)) return;
@@ -501,7 +531,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.gameOverTap = null;
     if (!this.alive(gen)) return;
-    this.scene.start('title', { mode: this.mode });
+    fade(this, 'out', () => this.scene.start('title', { mode: this.mode }));
   }
 
   // ------------------------------------------------------------ update --
@@ -511,24 +541,15 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) return;
     this.bg.update(time, dt);
 
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.life -= dt;
-      p.vy += p.g * dt;
-      p.img.x += p.vx * dt;
-      p.img.y += p.vy * dt;
-      p.img.setAlpha(Math.max(0, p.life / p.max) * 0.9);
-      if (p.life <= 0) {
-        p.img.setVisible(false);
-        this.pool.push(p.img);
-        this.particles.splice(i, 1);
-      }
-    }
+    this.fxp.update(dt);
 
-    for (const t of this.targets) {
-      if (t instanceof Duck) t.update(dt);
-      else if (t.update(dt)) audio.launch();
-    }
+    // brief hit-stop freezes the targets for a beat after a hit
+    if (this.hitStop > 0) this.hitStop -= dt;
+    else
+      for (const t of this.targets) {
+        if (t instanceof Duck) t.update(dt);
+        else if (t.update(dt)) audio.launch();
+      }
 
     if (this.phase === 'flying') {
       this.setTime += dt;

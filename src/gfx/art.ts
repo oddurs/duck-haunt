@@ -534,6 +534,8 @@ export const DOG_FRONT: Record<string, Art> = {
   laugh0: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_LAUGH0]),
   laugh1: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_LAUGH1]),
   happy: frontFrame([...EYES_OPEN, ...NOSE, ...MOUTH_GRIN]),
+  blink: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_GRIN]),
+  idleBlink: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_SHUT]),
 };
 
 // Sheet-covered arm with a paw, raised to hold a duck (right side).
@@ -755,3 +757,65 @@ export const ICON_PAUSE: Art = [
 ];
 
 export const ARROW: Art = ['W....', 'WW...', 'WWW..', 'WWWW.', 'WWW..', 'WW...', 'W....'];
+
+// --------------------------------------------------------- AMBIENT LIFE --
+export const CRITTER_PAL: Palette = {
+  K: '#08040E',
+  R: '#3C2E6A', // moonlit rim
+  E: '#F02828',
+  W: '#B8B0E8', // spider silk
+};
+
+// A crow that perches on the dead tree and bolts when you fire.
+export const CROW: Record<string, Art> = {
+  perch: [
+    '.............',
+    '.......RRK...',
+    '......KKEKK..',
+    '......KKKKKK.',
+    '.....KKKK....',
+    '..RKKKKKK....',
+    '.KKKKKKKK....',
+    'KKK.KKKK.....',
+    '.....K.K.....',
+    '.....K.K.....',
+  ],
+  caw: [
+    '.........K...',
+    '.......RRKK..',
+    '......KKEK...',
+    '......KKKKKK.',
+    '.....KKKK....',
+    '..RKKKKKK....',
+    '.KKKKKKKK....',
+    'KKK.KKKK.....',
+    '.....K.K.....',
+    '.....K.K.....',
+  ],
+  fly0: [
+    '.............',
+    'RK.......RK..',
+    '.KK.....KK...',
+    '..KKK.KKK....',
+    '...KKKKKKKEK.',
+    '....KKKKKKKKK',
+    '.....KK......',
+    '.............',
+    '.............',
+    '.............',
+  ],
+  fly1: [
+    '.............',
+    '.............',
+    '.............',
+    '..RRKKKKKKEK.',
+    '.KKKKKKKKKKKK',
+    'KK.KKK.KK....',
+    'K....K..K....',
+    '.............',
+    '.............',
+    '.............',
+  ],
+};
+
+export const SPIDER: Art = ['.K...K.', 'K.KRK.K', '.KKKKK.', 'K.KEK.K', '.K...K.'];

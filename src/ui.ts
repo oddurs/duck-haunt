@@ -109,8 +109,13 @@ export class MessageBox {
       this.root.add(l);
     });
     this.root.setVisible(true);
+    // NES-style blink-in
+    this.blinkEv?.remove();
+    this.blinkEv = this.scene.time.addEvent({ delay: 45, repeat: 3, callback: () => this.root.setVisible(!this.root.visible) });
   }
+  private blinkEv?: Phaser.Time.TimerEvent;
   hide(): void {
+    this.blinkEv?.remove();
     this.root.setVisible(false);
   }
   /** Re-centre after the screen changed size. */
@@ -139,6 +144,7 @@ export class Button {
   readonly label: Phaser.GameObjects.BitmapText;
   area: Hit = { x: 0, y: 0, w: 0, h: 0 };
   selected = false;
+  pressed = false;
   constructor(
     scene: Phaser.Scene,
     public text: string,
@@ -159,12 +165,17 @@ export class Button {
   draw(): void {
     const x = Math.round(this.cx - this.w / 2);
     this.g.clear();
-    box(this.g, x, this.y, this.w, this.h, this.selected ? COL.pumpkin : COL.gray);
-    if (this.selected) box(this.g, x + 1, this.y + 1, this.w - 2, this.h - 2, COL.orange, COL.black, 0);
+    const y = this.y + (this.pressed ? 1 : 0);
+    box(this.g, x, y, this.w, this.h, this.selected ? COL.pumpkin : COL.gray, this.pressed ? COL.orange : COL.black);
+    if (this.selected && !this.pressed) box(this.g, x + 1, y + 1, this.w - 2, this.h - 2, COL.orange, COL.black, 0);
     this.label.setText(this.text.toUpperCase());
-    this.label.setTint(this.selected ? COL.white : COL.gray);
+    this.label.setTint(this.pressed ? COL.black : this.selected ? COL.white : COL.gray);
     centerX(this.label, this.cx);
-    this.label.y = Math.round(this.y + (this.h - 8) / 2);
+    this.label.y = Math.round(y + (this.h - 8) / 2);
+  }
+  setPressed(p: boolean) {
+    this.pressed = p;
+    this.draw();
   }
   setSelected(s: boolean) {
     if (s === this.selected) return;
@@ -179,4 +190,27 @@ export class Button {
     this.g.destroy();
     this.label.destroy();
   }
+}
+
+/** Stepped NES-style fade (black in four palette steps). */
+export function fade(scene: Phaser.Scene, dir: 'in' | 'out', done?: () => void): void {
+  const steps = dir === 'in' ? [1, 0.75, 0.5, 0.25, 0] : [0, 0.25, 0.5, 0.75, 1];
+  const r = scene.add
+    .rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000)
+    .setOrigin(0)
+    .setDepth(DEPTH.cursor + 10)
+    .setAlpha(steps[0]);
+  let i = 0;
+  scene.time.addEvent({
+    delay: 55,
+    repeat: steps.length - 1,
+    callback: () => {
+      i++;
+      if (i < steps.length) r.setAlpha(steps[i]);
+      else {
+        if (dir === 'in') r.destroy();
+        done?.();
+      }
+    },
+  });
 }

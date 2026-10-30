@@ -5,10 +5,13 @@ import { Dog } from '../objects/Dog';
 import { Duck } from '../objects/Duck';
 import { computeLayout, type Layout } from '../gfx/background';
 import { renderLogo } from '../gfx/font';
-import { DEPTH, COL, txt, centerX, Button, inside, type Hit } from '../ui';
+import { DEPTH, COL, txt, centerX, Button, inside, fade, type Hit } from '../ui';
+import { Particles } from '../objects/Particles';
 import { audio } from '../audio/audio';
 import { TITLE } from '../audio/songs';
 import { save, persist, type Mode } from '../state';
+
+let logoDrips: { x: number; y: number }[] = [];
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: 'A', label: 'GAME A  1 DUCK ' },
@@ -36,6 +39,9 @@ export class TitleScene extends Phaser.Scene {
   private cameoBusy = false;
   private starting = false;
   private cross!: Phaser.GameObjects.Image;
+  private fxp!: Particles;
+  private cursor!: Phaser.GameObjects.Image;
+  private dripT = 1;
 
   constructor() {
     super('title');
@@ -58,19 +64,18 @@ export class TitleScene extends Phaser.Scene {
     if (!this.textures.exists('logo1')) {
       this.textures.addCanvas(
         'logo1',
-        renderLogo('DUCK', { scale: 3, bands: ['#FCFCFC', '#D8B8F8', '#B8B8F8', '#9878F8'], outline: '#000000', outline2: '#6844FC' }),
+        renderLogo('DUCK', { scale: 3, bands: ['#FCFCFC', '#D8B8F8', '#B8B8F8', '#9878F8'], outline: '#000000', outline2: '#6844FC' }).canvas,
       );
-      this.textures.addCanvas(
-        'logo2',
-        renderLogo('HAUNT', {
+      const haunt = renderLogo('HAUNT', {
           scale: 4,
           bands: ['#F8D878', '#FCA044', '#F87800', '#F83800', '#C81800'],
           outline: '#000000',
           outline2: '#5C0C0C',
           drip: '#58D854',
           seed: 13,
-        }),
-      );
+        });
+      logoDrips = haunt.drips;
+      this.textures.addCanvas('logo2', haunt.canvas);
     }
     this.logo1 = this.add.image(0, 0, 'logo1').setOrigin(0.5, 0).setDepth(DEPTH.ui);
     this.logo2 = this.add.image(0, 0, 'logo2').setOrigin(0.5, 0).setDepth(DEPTH.ui);
@@ -80,6 +85,10 @@ export class TitleScene extends Phaser.Scene {
     this.snd = this.add.image(0, 0, save.muted ? 'icoSoundOff' : 'icoSoundOn').setOrigin(0).setDepth(DEPTH.ui);
     this.full = this.add.image(0, 0, 'icoFull').setOrigin(0).setDepth(DEPTH.ui).setVisible(this.scale.fullscreen.available);
     this.cross = this.add.image(0, 0, 'crosshair').setDepth(DEPTH.cursor).setVisible(false);
+    this.cursor = this.add.image(0, 0, 'p7').setDepth(DEPTH.ui);
+    this.fxp = new Particles(this);
+    this.dog.fx = (kind, x, y) => (kind === 'grass' ? this.fxp.grass(x, y) : this.fxp.dust(x, y));
+    this.bg.onOwl = () => audio.owl();
     this.layout();
     this.select(this.sel, false);
 
@@ -111,6 +120,7 @@ export class TitleScene extends Phaser.Scene {
     kb?.on('keydown-M', () => this.toggleMute());
 
     if (audio.ctx?.state === 'running') audio.play(TITLE);
+    fade(this, 'in');
   }
 
   private layout(): void {
@@ -176,6 +186,17 @@ export class TitleScene extends Phaser.Scene {
       return;
     }
     if (first) audio.play(TITLE);
+    if (this.bg.poke(x, y)) return;
+    // easter egg: the fly-by ducks can be shot too
+    const d = this.ducks.find((dd) => dd.hitScore(x, y, 6) < Infinity);
+    if (d) {
+      audio.shot();
+      d.shoot();
+      this.fxp.feathers(d.x, d.y, [d.kind.pal.D, d.kind.pal.M, d.kind.pal.L, '#FCFCFC']);
+      this.fxp.ring(x, y, COL.white);
+      return;
+    }
+    this.fxp.ring(x, y, COL.lilac);
   }
 
   private start(mode: Mode): void {
@@ -184,22 +205,40 @@ export class TitleScene extends Phaser.Scene {
     audio.stopMusic();
     audio.select();
     const b = this.buttons[this.sel];
+    b.setPressed(true);
+    this.time.delayedCall(110, () => b.setPressed(false));
     this.tweens.add({
       targets: [b.label],
       alpha: 0,
       duration: 70,
       yoyo: true,
-      repeat: 3,
-      onComplete: () => this.scene.start('game', { mode }),
+      repeat: 2,
+      delay: 110,
+      onComplete: () => fade(this, 'out', () => this.scene.start('game', { mode })),
     });
   }
 
   update(time: number, delta: number): void {
     const dt = Math.min(0.05, delta / 1000);
     this.bg.update(time, dt);
+    this.fxp.update(dt);
     const L = this.L;
     // gentle logo float
     this.logo2.y = Math.round(this.logo1.y + this.logo1.height - 4 + Math.sin(time / 600) * 1.5);
+    // slime drips off the lettering
+    this.dripT -= dt;
+    if (this.dripT <= 0 && logoDrips.length) {
+      this.dripT = 0.4 + Math.random() * 0.9;
+      const tip = logoDrips[Math.floor(Math.random() * logoDrips.length)];
+      const lx = this.logo2.x - this.logo2.width / 2 + tip.x;
+      this.fxp.emit(lx, this.logo2.y + tip.y, 0x58d854, 0, 8, 0.7, 140, 1, DEPTH.ui - 1);
+    }
+    // bobbing jack-o'-lantern cursor beside the selected game
+    const sb = this.buttons[this.sel];
+    if (sb) {
+      const bob = Math.floor(time / 260) % 2;
+      this.cursor.setPosition(Math.round(sb.area.x + sb.area.w / 2 - sb.w / 2 - 9 - bob), Math.round(sb.label.y + 3));
+    }
     // decorative fly-bys
     this.duckT -= dt;
     if (this.duckT <= 0) {
@@ -215,7 +254,7 @@ export class TitleScene extends Phaser.Scene {
     for (let i = this.ducks.length - 1; i >= 0; i--) {
       const d = this.ducks[i];
       d.update(dt);
-      if (d.state === 'gone') {
+      if (d.state === 'gone' || d.state === 'down') {
         d.destroy();
         this.ducks.splice(i, 1);
       }

@@ -321,6 +321,21 @@ class Synth {
   pumpkinGone() {
     this.tone({ wave: 'tri', freq: 300, to: 150, dur: 0.15, vol: 0.15 });
   }
+  caw() {
+    for (const t of [0, 0.22]) {
+      this.tone({ wave: 'p12', freq: 820, to: 560, dur: 0.16, vol: 0.12, t, vib: 70, vibRate: 40, filter: { type: 'bandpass', freq: 1400, q: 1.2 } }, true);
+      this.tone({ wave: 'noise', freq: 1.3, dur: 0.12, vol: 0.06, t, filter: { type: 'bandpass', freq: 2200 } });
+    }
+  }
+  rustle() {
+    this.tone({ wave: 'noise', freq: 1.6, dur: 0.16, vol: 0.09, release: 0.12, filter: { type: 'highpass', freq: 2600 } });
+  }
+  tink() {
+    this.tone({ wave: 'p12', freq: 2600, to: 2300, dur: 0.05, vol: 0.06, t: 0.18 });
+  }
+  wingFlurry() {
+    for (let i = 0; i < 5; i++) this.tone({ wave: 'noise', freq: 1, dur: 0.04, vol: 0.07, t: i * 0.06, filter: { type: 'bandpass', freq: 900, q: 1.5 } });
+  }
   owl() {
     this.tone({ wave: 'tri', freq: 392, to: 370, dur: 0.25, vol: 0.18, t: 0 }, true);
     this.tone({ wave: 'tri', freq: 392, to: 349, dur: 0.4, vol: 0.18, t: 0.35 }, true);

@@ -86,6 +86,9 @@ export class Duck {
     this.state = 'shot';
     this.stateT = 0;
     this.sprite.setFrame('shot');
+    // one white frame sells the impact
+    this.sprite.setTintFill(0xffffff);
+    this.sprite.scene.time.delayedCall(70, () => this.sprite.clearTint());
     this.sprite.setFlipX(false);
     this.sprite.setAlpha(1);
   }

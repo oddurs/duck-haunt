@@ -117,7 +117,7 @@ export interface LogoStyle {
 }
 
 /** Big banded, outlined (and optionally dripping) title lettering. */
-export function renderLogo(text: string, st: LogoStyle): HTMLCanvasElement {
+export function renderLogo(text: string, st: LogoStyle): { canvas: HTMLCanvasElement; drips: { x: number; y: number }[] } {
   const s = st.scale;
   const pad = 3;
   const dripRoom = st.drip ? 10 : 0;
@@ -137,6 +137,7 @@ export function renderLogo(text: string, st: LogoStyle): HTMLCanvasElement {
   // 2) drips hang from the bottom edge of strokes
   let seed = st.seed ?? 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const drips: { x: number; y: number }[] = [];
   const dripMask: boolean[][] = Array.from({ length: h }, () => new Array(w).fill(false));
   if (st.drip) {
     for (let x = 0; x < w; x++) {
@@ -144,10 +145,12 @@ export function renderLogo(text: string, st: LogoStyle): HTMLCanvasElement {
         if (mask[y][x] && !mask[y + 1][x]) {
           if (rnd() < 0.16) {
             const len = 2 + Math.floor(rnd() * dripRoom);
-            for (let k = 1; k <= len && y + k < h - 1; k++) {
+            let k = 1;
+            for (; k <= len && y + k < h - 1; k++) {
               dripMask[y + k][x] = true;
               if (k === len && x + 1 < w) dripMask[y + k][x + 1] = true;
             }
+            drips.push({ x, y: y + k });
           }
           break;
         }
@@ -189,5 +192,5 @@ export function renderLogo(text: string, st: LogoStyle): HTMLCanvasElement {
         ctx.fillRect(x, y, 1, 1);
       }
     }
-  return c;
+  return { canvas: c, drips };
 }

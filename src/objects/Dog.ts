@@ -15,6 +15,8 @@ export class Dog {
   private bang: Phaser.GameObjects.BitmapText;
   private L!: Layout;
   seq: Seq | null = null;
+  /** Hook for particle effects: grass kicked up, dust from paws. */
+  fx?: (kind: 'grass' | 'dust', x: number, y: number) => void;
 
   constructor(private scene: Phaser.Scene) {
     const s = scene;
@@ -48,7 +50,9 @@ export class Dog {
     w.setPosition(-24, L.walkY).setVisible(true).play('dogWalk');
     const walkTo = async (x: number) => {
       w.play('dogWalk', true);
+      const puff = this.scene.time.addEvent({ delay: 220, loop: true, callback: () => this.fx?.('dust', w.x - 12, L.walkY) });
       await seq.tween({ targets: w, x, duration: Math.abs(x - w.x) * 19 });
+      puff.remove();
     };
     await walkTo(Math.round(L.W * 0.24));
     w.play('dogSniff');
@@ -64,10 +68,21 @@ export class Dog {
     await seq.wait(550);
     this.bang.setVisible(false);
     // leap
+    // crouch, then leap
+    if (!seq.skipped) {
+      w.y = L.walkY + 1;
+      this.fx?.('dust', w.x - 6, L.walkY);
+      this.fx?.('dust', w.x + 6, L.walkY);
+    }
+    await seq.wait(90);
     w.setTexture('dogJump').setOrigin(0.5, 1);
     await seq.tween({ targets: w, x: w.x + 16, y: L.walkY - 30, duration: 320, ease: 'Quad.easeOut' });
     w.setTexture('dogDive').setOrigin(0.5, 1).setDepth(DEPTH.dogPop);
     await seq.tween({ targets: w, x: w.x + 6, y: L.dirtTop + 20, duration: 340, ease: 'Quad.easeIn' });
+    if (!seq.skipped) {
+      this.fx?.('grass', w.x, L.dirtTop - 14);
+      audio.rustle();
+    }
     this.hide();
     this.seq = null;
   }
@@ -76,9 +91,13 @@ export class Dog {
     const L = this.L;
     const p = this.pop;
     p.setPosition(Math.round(Phaser.Math.Clamp(x, 28, L.W - 28)), L.popHidden).setVisible(true);
-    await tween(this.scene, { targets: p, y: L.popShown, duration: 380, ease: 'Quad.easeOut' });
+    this.fx?.('grass', p.x, L.dirtTop - 16);
+    audio.rustle();
+    // springs up with a little overshoot, settles, then sinks back
+    await tween(this.scene, { targets: p, y: L.popShown, duration: 420, ease: 'Back.easeOut', easeParams: [2.2] });
     await wait(this.scene, holdMs);
     await tween(this.scene, { targets: p, y: L.popHidden + 6, duration: 320, ease: 'Quad.easeIn' });
+    this.fx?.('grass', p.x, L.dirtTop - 16);
     this.hide();
   }
 
@@ -93,6 +112,9 @@ export class Dog {
       h.setTexture(`duck${k}`, 'fall').setVisible(sides.includes(i));
     });
     audio.play(CAUGHT);
+    // proud blink mid-pose
+    this.scene.time.delayedCall(820, () => this.face.setFrame('blink'));
+    this.scene.time.delayedCall(940, () => this.face.setFrame('happy'));
     await this.rise(x, 900);
   }
 
@@ -115,8 +137,12 @@ export class Dog {
     const L = this.L;
     const p = this.pop;
     p.setPosition(Math.round(x), L.popHidden).setVisible(true);
-    await tween(this.scene, { targets: p, y: L.popShown, duration: 500, ease: 'Quad.easeOut' });
-    await wait(this.scene, 700);
+    await tween(this.scene, { targets: p, y: L.popShown, duration: 520, ease: 'Back.easeOut', easeParams: [1.8] });
+    await wait(this.scene, 350);
+    this.face.setFrame('idleBlink');
+    await wait(this.scene, 120);
+    this.face.setFrame('idle');
+    await wait(this.scene, 300);
     this.face.play('dogLaugh');
     await wait(this.scene, 1200);
     this.face.stop().setFrame('idle');

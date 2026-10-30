@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { computeLayout, paintSky, paintLand, paintFore, moonPos, BLOOD_BANDS, type Layout } from '../gfx/background';
 import { DEPTH } from '../ui';
+import { Critters } from './Critters';
 
 let seq = 0;
 
@@ -30,6 +31,9 @@ export class Backdrop {
   private batTimer = 3;
   private owlTimer = 4;
   onOwl?: () => void;
+  readonly critters: Critters;
+  private owlPos = { x: 0, y: 0 };
+  private owlWide = 0;
 
   constructor(private scene: Phaser.Scene) {
     const s = scene;
@@ -43,6 +47,7 @@ export class Backdrop {
     this.fore = s.add.image(0, 0, 'pix').setOrigin(0).setDepth(DEPTH.fore);
     this.fogFront = s.add.tileSprite(0, 0, 256, 20, 'fog2').setOrigin(0, 1).setDepth(DEPTH.fogFront).setAlpha(0.22);
     this.lantern = s.add.image(0, 0, 'p11').setDepth(DEPTH.fore);
+    this.critters = new Critters(s);
     this.lanternGlow = s.add.image(0, 0, 'glow').setDepth(DEPTH.fore).setTint(0xf8b800).setBlendMode(Phaser.BlendModes.ADD).setScale(2);
     this.layout(computeLayout(s.scale.width, s.scale.height));
   }
@@ -65,6 +70,8 @@ export class Backdrop {
     this.keys = Object.values(ks);
     old.forEach((o) => s.textures.exists(o) && s.textures.remove(o));
 
+    this.critters.layout(L, land);
+    this.owlPos = land.owl;
     const m = moonPos(L);
     this.moon.setPosition(m.x, m.y);
     this.cloud.setSize(L.W, 20).setPosition(0, m.y + 9);
@@ -92,6 +99,22 @@ export class Backdrop {
     this.owl = [0, 2].map((dx) =>
       s.add.image(land.owl.x + dx, land.owl.y, 'pix').setOrigin(0).setDisplaySize(1, 1).setTint(0xf8d878).setDepth(DEPTH.land),
     );
+  }
+
+  /** Gunfire startles the wildlife; bats flee faster. */
+  scare(x: number, y: number): void {
+    this.critters.scare(x, y);
+    this.bats.forEach((b) => (b.vx = Math.sign(b.vx) * Math.max(Math.abs(b.vx), 110)));
+  }
+
+  /** Title-screen taps on critters. */
+  poke(x: number, y: number): boolean {
+    if (Math.abs(x - (this.owlPos.x + 1)) < 7 && Math.abs(y - this.owlPos.y) < 7) {
+      this.owlWide = 1.2;
+      this.onOwl?.();
+      return true;
+    }
+    return this.critters.poke(x, y);
   }
 
   setBloodSky(on: boolean): void {
@@ -140,8 +163,10 @@ export class Backdrop {
     this.lanternGlow.setAlpha(lf * 0.7);
     // owl blinks, occasionally hoots
     this.owlTimer -= dt;
-    const blink = this.owlTimer % 3 < 0.12;
-    this.owl.forEach((o) => o.setVisible(!blink));
+    const blink = this.owlTimer % 3 < 0.12 && this.owlWide <= 0;
+    this.owlWide -= dt;
+    this.owl.forEach((o) => o.setVisible(!blink).setDisplaySize(1, this.owlWide > 0 ? 2 : 1));
+    this.critters.update(dt);
     if (this.owlTimer < 0) {
       this.owlTimer = 9 + Math.random() * 12;
       this.onOwl?.();

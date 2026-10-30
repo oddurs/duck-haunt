@@ -69,6 +69,15 @@ export class BootScene extends Phaser.Scene {
     addArt(this, 'icoFull', A.ICON_FULL, A.UI_PAL);
     addArt(this, 'icoPause', A.ICON_PAUSE, A.UI_PAL);
     addArt(this, 'arrow', A.ARROW, A.UI_PAL);
+    addFrames(this, 'crow', A.CROW, A.CRITTER_PAL);
+    addArt(this, 'spider', A.SPIDER, A.CRITTER_PAL);
+    // expanding pixel rings for tap feedback
+    for (const [i, R] of [3, 5, 7].entries()) {
+      const [c, ctx] = makeCanvas(R * 2 + 1, R * 2 + 1);
+      ctx.fillStyle = '#fff';
+      for (let a = 0; a < 64; a++) ctx.fillRect(Math.round(R + Math.cos((a / 64) * Math.PI * 2) * R), Math.round(R + Math.sin((a / 64) * Math.PI * 2) * R), 1, 1);
+      this.textures.addCanvas(`ring${i}`, c);
+    }
 
     // 1px white pixel for particles / flashes
     {
@@ -101,6 +110,7 @@ export class BootScene extends Phaser.Scene {
     this.anims.create({ key: 'dogWalk', frames: fr('dogSide', 'walk0', 'walk1'), frameRate: 6, repeat: -1 });
     this.anims.create({ key: 'dogSniff', frames: fr('dogSide', 'sniff0', 'sniff1'), frameRate: 7, repeat: -1 });
     this.anims.create({ key: 'dogLaugh', frames: fr('dogFront', 'laugh0', 'laugh1'), frameRate: 8, repeat: -1 });
+    this.anims.create({ key: 'crowFly', frames: fr('crow', 'fly0', 'fly1'), frameRate: 10, repeat: -1 });
     this.anims.create({ key: 'bat', frames: fr('bat', 'bat0', 'bat1'), frameRate: 8, repeat: -1 });
 
     this.scene.start('title');

@@ -52,32 +52,6 @@ function px(ctx: Ctx, x: number, y: number, col: string, w = 1, h = 1) {
   ctx.fillRect(Math.round(x), Math.round(y), w, h);
 }
 
-function line(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, col: string, thick = 1) {
-  x0 = Math.round(x0);
-  y0 = Math.round(y0);
-  x1 = Math.round(x1);
-  y1 = Math.round(y1);
-  const dx = Math.abs(x1 - x0);
-  const dy = -Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx + dy;
-  const o = Math.floor(thick / 2);
-  for (;;) {
-    px(ctx, x0 - o, y0 - o, col, thick, thick);
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      x0 += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      y0 += sy;
-    }
-  }
-}
-
 function disc(ctx: Ctx, cx: number, cy: number, r: number, col: string) {
   for (let y = -r; y <= r; y++)
     for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) px(ctx, cx + x, cy + y, col);
@@ -199,10 +173,101 @@ export function paintClouds(w: number, h: number, seed = 4, body = '#1A0E40', ri
   return c;
 }
 
+type Pt = { x: number; y: number };
+
 export interface Land {
   canvas: HTMLCanvasElement;
-  windows: { x: number; y: number }[];
-  owl: { x: number; y: number };
+  windows: Pt[];
+  owl: Pt; // left eye of the owl in the knot hole
+  perch: Pt; // where the crow stands
+  web: Pt; // where the spider's thread hangs from
+}
+
+/**
+ * Gnarled dead tree: a twisting trunk with flared roots and branches that
+ * hook into claws. Painted as a mask, then lit by the moon (up and to the
+ * right) so every edge facing it gets a cold rim.
+ */
+function paintTree(ctx: Ctx, tx: number, gy: number, th: number, r: () => number): { owl: Pt; perch: Pt; web: Pt } {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const m = new Uint8Array(w * h); // 1 wood, 2 trunk bark
+  const set = (x: number, y: number, v: number) => {
+    x = Math.round(x);
+    y = Math.round(y);
+    if (x >= 0 && y >= 0 && x < w && y < h && m[y * w + x] < v) m[y * w + x] = v;
+  };
+  const blob = (x: number, y: number, rad: number, v: number) => {
+    const R = Math.ceil(rad);
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (dx * dx + dy * dy <= rad * rad + 0.5) set(x + dx, y + dy, v);
+  };
+  const cxAt = (t: number) => tx + Math.sin(t * 2.6 + 0.4) * 3 * t + t * 4;
+  // trunk with a root flare
+  for (let i = 0; i <= th; i++) {
+    const t = i / th;
+    let wd = 5.6 - 3.8 * Math.pow(t, 0.85);
+    if (t < 0.12) wd += (0.12 - t) * 40;
+    for (let x = -wd; x <= wd; x++) set(cxAt(t) + x, gy - i, 2);
+  }
+  // roots creeping along the ground
+  for (const [dir, len, drop] of [
+    [-1, 15, 3],
+    [1, 13, 3],
+    [-1, 8, 2],
+    [1, 7, 4],
+  ]) {
+    let x = tx;
+    let y = gy - 1;
+    for (let k = 0; k < len; k++) {
+      x += dir;
+      if (k % drop === 0) y += 1;
+      blob(x, y, Math.max(0, 1.7 * (1 - k / len)), 2);
+    }
+  }
+  let perch: Pt = { x: tx + 20, y: gy - th * 0.6 };
+  let web: Pt = { x: tx - 14, y: gy - th * 0.5 };
+  const limb = (x: number, y: number, ang: number, len: number, thk: number, depth: number, curl: number, tag?: 'perch' | 'web') => {
+    let a = ang;
+    for (let k = 0; k < len; k++) {
+      const t = k / len;
+      a += curl * (t > 0.62 ? 0.1 : 0.012); // hooked, claw-like tips
+      x += Math.cos(a);
+      y += Math.sin(a);
+      const rad = Math.max(0, thk * (1 - t * 0.72) - 0.3);
+      blob(x, y, rad, 1);
+      if (tag === 'perch' && k === Math.floor(len * 0.58)) perch = { x: Math.round(x), y: Math.round(y - rad - 1) };
+      if (tag === 'web' && k === len - 1) web = { x: Math.round(x), y: Math.round(y + 1) };
+      if (depth > 0 && k > len * 0.3 && r() < 0.08)
+        limb(x, y, a + (r() < 0.5 ? -1 : 1) * (0.5 + r() * 0.6), len * (0.35 + r() * 0.25), Math.max(0.6, rad), depth - 1, (r() - 0.5) * 2.4);
+    }
+  };
+  const topX = cxAt(1);
+  limb(topX, gy - th + 2, -Math.PI / 2 - 0.4, th * 0.34, 2.6, 2, -1.2);
+  limb(topX, gy - th + 2, -Math.PI / 2 + 0.5, th * 0.3, 2.4, 2, 1.1);
+  limb(cxAt(0.64), gy - th * 0.64, -0.22, th * 0.5, 3.2, 2, 0.7, 'perch');
+  limb(cxAt(0.5), gy - th * 0.5, Math.PI + 0.25, th * 0.32, 2.6, 1, -0.9, 'web');
+  limb(cxAt(0.82), gy - th * 0.82, Math.PI + 0.65, th * 0.26, 2, 1, 1.2);
+
+  // owl's knot hole carved out of the trunk
+  const ot = 0.4;
+  const hx = Math.round(cxAt(ot));
+  const hy = Math.round(gy - th * ot);
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (dx * dx * 0.8 + dy * dy * 0.6 <= 2.6) m[(hy + dy) * w + hx + dx] = 3;
+
+  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : m[y * w + x]);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const v = m[y * w + x];
+      if (!v) continue;
+      let col = '#0D0820';
+      if (v === 3) col = at(x, y - 1) !== 3 || at(x - 1, y) !== 3 ? '#2A2050' : '#020104';
+      else if ((!at(x + 1, y) && at(x - 1, y)) || (!at(x, y - 1) && at(x, y + 1))) col = '#3C2E6A';
+      else if (!at(x - 1, y) && at(x + 1, y) && at(x + 2, y)) col = '#05030C';
+      else if (v === 2 && !at(x + 2, y)) col = '#1E1640';
+      else if (v === 2 && (x * 5 + (y >> 2) * 3) % 9 === 0) col = '#07040F';
+      px(ctx, x, y, col);
+    }
+  return { owl: { x: hx - 1, y: hy }, perch, web };
 }
 
 /** Ruined castle on a rocky crag plus rolling graveyard hills and the dead tree. */
@@ -348,36 +413,8 @@ export function paintLand(L: Layout, seed = 11): Land {
     }
   }
 
-  // dead tree on the left
-  const tx = Math.round(W * 0.14);
-  const ty = H - 2;
-  const trunkH = Math.min(96, Math.round(horizon * 0.55));
-  const T = '#0A0614';
-  const Trim = '#2C1E50';
-  for (let i = 0; i < trunkH; i++) {
-    const w = Math.max(2, Math.round(7 - (i / trunkH) * 5));
-    const sway = Math.round(Math.sin(i * 0.06) * 2);
-    px(ctx, tx - Math.floor(w / 2) + sway, ty - i, T, w, 1);
-    px(ctx, tx - Math.floor(w / 2) + sway, ty - i, Trim, 1, 1);
-  }
-  line(ctx, tx - 3, ty, tx - 9, ty + 2, T, 2);
-  line(ctx, tx + 3, ty, tx + 8, ty + 2, T, 2);
-  const owl = { x: tx - 1, y: ty - Math.round(trunkH * 0.45) };
-  px(ctx, owl.x - 1, owl.y - 1, '#000000', 4, 3);
-  const branch = (x: number, y0: number, ang: number, len: number, th: number, depth: number) => {
-    const x2 = x + Math.cos(ang) * len;
-    const y2 = y0 + Math.sin(ang) * len;
-    line(ctx, x, y0, x2, y2, T, th);
-    if (depth <= 0 || len < 4) return;
-    const k = r() < 0.5 ? 2 : 3;
-    for (let j = 0; j < k; j++) branch(x2, y2, ang + (r() - 0.5) * 1.6, len * (0.55 + r() * 0.2), Math.max(1, th - 1), depth - 1);
-  };
-  const topX = tx + Math.round(Math.sin(trunkH * 0.06) * 2);
-  branch(topX, ty - trunkH + 2, -Math.PI / 2 - 0.5, 22, 3, 3);
-  branch(topX, ty - trunkH + 2, -Math.PI / 2 + 0.6, 20, 3, 3);
-  branch(tx, ty - trunkH * 0.6, -0.4, 18, 2, 2);
-  branch(tx, ty - trunkH * 0.7, Math.PI + 0.35, 16, 2, 2);
-  return { canvas: c, windows, owl };
+  const tree = paintTree(ctx, Math.round(W * 0.14), H - 2, Math.min(104, Math.round(horizon * 0.62)), r);
+  return { canvas: c, windows, ...tree };
 }
 
 const LEAVES = ['#A0602C', '#C8843C', '#7C4020', '#E0A050', '#8C3018'];

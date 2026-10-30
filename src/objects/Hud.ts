@@ -19,8 +19,16 @@ export class Hud {
   private required = 6;
   private x0 = 0;
   private y0 = 0;
+  private shots = 3;
+  private shown = 0;
+  private target = 0;
+  private popAt: number[] = new Array(10).fill(-1e9);
+  private now = 0;
+  private iconY = 0;
+  private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene, iconKey: string) {
+    this.scene = scene;
     const s = scene;
     this.g = s.add.graphics().setDepth(DEPTH.hud);
     this.round = txt(s, 0, 0, 'R=1', COL.lime).setDepth(DEPTH.hud);
@@ -53,6 +61,7 @@ export class Hud {
     const hx = x + 40;
     box(g, hx, y, 114, 24, COL.lime);
     this.hitLbl.setPosition(hx + 4, y + 8);
+    this.iconY = y + 5;
     this.icons.forEach((ic, i) => ic.setPosition(hx + 30 + i * 8, y + 5));
     g.fillStyle(COL.blue, 1);
     for (let i = 0; i < 10; i++) {
@@ -74,10 +83,33 @@ export class Hud {
     this.redraw();
   }
   setShots(n: number) {
+    // the spent shell kicks out of the box and tumbles away
+    for (let i = n; i < this.shots; i++) {
+      const b = this.bullets[i];
+      const shell = this.scene.add.image(b.x, b.y, 'bullet').setOrigin(0).setDepth(DEPTH.hud + 1);
+      this.scene.tweens.add({ targets: shell, y: b.y - 7, x: b.x + 3, duration: 120, ease: 'Quad.easeOut' });
+      this.scene.tweens.add({ targets: shell, y: b.y + 12, x: b.x + 7, alpha: 0, delay: 120, duration: 260, ease: 'Quad.easeIn', onComplete: () => shell.destroy() });
+    }
+    // reloads drop back in one at a time
+    for (let i = this.shots; i < n; i++) {
+      const b = this.bullets[i];
+      const y = b.y;
+      b.y = y - 4;
+      this.scene.tweens.add({ targets: b, y, duration: 140, delay: (i - this.shots) * 70, ease: 'Bounce.easeOut' });
+    }
+    this.shots = n;
     this.bullets.forEach((b, i) => b.setVisible(i < n));
   }
-  setScore(n: number) {
-    this.score.setText(String(Math.min(999999, n)).padStart(6, '0'));
+  /** Score digits roll up to the new total instead of jumping. */
+  setScore(n: number, instant = false) {
+    this.target = Math.min(999999, n);
+    if (instant) this.shown = this.target;
+    this.score.setText(String(Math.round(this.shown)).padStart(6, '0'));
+  }
+  setState(i: number, st: IconState) {
+    if (i < 0 || i > 9) return;
+    this.states[i] = st;
+    if (st === 1) this.popAt[i] = this.now;
   }
   resetIcons() {
     this.states = new Array(10).fill(0);
@@ -85,12 +117,22 @@ export class Hud {
   }
 
   update(time: number): void {
+    const dt = Math.min(100, time - this.now);
+    this.now = time;
     const on = Math.floor(time / 160) % 2 === 0;
     this.icons.forEach((ic, i) => {
       const st = this.states[i];
-      ic.setTint(st === 1 ? COL.red : st === 2 ? COL.dim : COL.white);
+      const age = time - this.popAt[i];
+      ic.setTint(age < 90 ? COL.white : st === 1 ? COL.red : st === 2 ? COL.dim : COL.white);
+      ic.y = this.iconY - (age < 160 ? (age < 80 ? 2 : 1) : 0);
       ic.setVisible(this.flashing.includes(i) ? on : true);
     });
+    if (this.shown !== this.target) {
+      const step = Math.max(10, Math.abs(this.target - this.shown) * 0.012 * dt);
+      this.shown = this.shown < this.target ? Math.min(this.target, this.shown + step) : this.target;
+      this.score.setText(String(Math.round(this.shown / 10) * 10).padStart(6, '0'));
+      if (this.shown === this.target) this.score.setText(String(this.target).padStart(6, '0'));
+    }
   }
 
   setVisible(v: boolean) {

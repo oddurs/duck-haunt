@@ -392,53 +392,58 @@ export function paintFore(L: Layout, seed = 5): HTMLCanvasElement {
   const [c, ctx] = makeCanvas(W, H);
   const r = rng(seed);
 
-  const row = (baseH: number, amp: number, blades: number, bladeMax: number, cols: string[], rimCol: string, outline: string | null) => {
-    const top = new Array(W).fill(0);
-    for (let x = 0; x < W; x++)
-      top[x] = Math.round(dirtTop - (baseH + amp * Math.sin(x * 0.07 + baseH) + amp * 0.6 * Math.sin(x * 0.19 + 2) + r() * 1.5));
-    // tapered blades rising off the silhouette
-    for (let b = 0; b < blades; b++) {
-      const x0 = Math.min(W - 1, Math.floor(r() * W));
-      const len = 3 + Math.floor(Math.pow(r(), 1.4) * bladeMax);
-      const lean = b % 3 === 0 ? 0 : r() < 0.5 ? -1 : 1;
-      for (let i = 0; i < len; i++) {
-        const xx = Math.round(x0 + lean * Math.pow(i / len, 2) * 3);
-        const yy = top[x0] - i;
-        for (const dx of i < len * 0.45 ? [0, 1] : [0]) {
-          const X = Math.min(W - 1, Math.max(0, xx + dx));
-          top[X] = Math.min(top[X], Math.max(grassTop - 2, yy));
-        }
+  // One blade: a tapered quadratic curve, dark at the root, moonlit near the tip.
+  const blade = (x0: number, h: number, lean: number, w0: number, pal: string[], lit: string) => {
+    h = Math.min(h, dirtTop - grassTop + 1);
+    for (let i = 0; i <= h; i++) {
+      const t = i / h;
+      const x = Math.round(x0 + lean * t * t);
+      const y = dirtTop - i;
+      const w = Math.max(1, Math.round(w0 * (1 - t * 0.85)));
+      const col = t < 0.35 ? pal[0] : t < 0.7 ? pal[1] : pal[2];
+      px(ctx, x, y, col, w, 1);
+      if (t > 0.45 && w > 1) px(ctx, x, y, lit); // left edge catches the moon
+      if (i === h) px(ctx, x, y, lit);
+    }
+  };
+  const layer = (n: number, hMin: number, hMax: number, pal: string[], lit: string) => {
+    for (let i = 0; i < n; i++) {
+      // blades grow in little clumps that fan outward
+      const cx = Math.floor(r() * (W + 8)) - 4;
+      const k = 2 + Math.floor(r() * 3);
+      for (let j = 0; j < k; j++) {
+        const spread = (j - (k - 1) / 2) * 1.6;
+        const h = Math.round(hMin + Math.pow(r(), 1.3) * (hMax - hMin));
+        const lean = spread * (1.5 + r() * 2) + (r() - 0.5) * 3;
+        blade(cx + Math.round(spread), h, lean, 2 + (r() < 0.4 ? 1 : 0), pal, lit);
       }
     }
-    for (let x = 0; x < W; x++) {
-      for (let yy = top[x]; yy < dirtTop; yy++) {
-        const d = yy - top[x];
-        const depth = (yy - (dirtTop - baseH)) / baseH; // 0 at mid, 1 at dirt
-        let k = depth < 0.1 ? 0 : depth < 0.5 ? 1 : 2;
-        if (k < 2 && dither(x, yy, (depth % 0.5) * 2 - 0.4)) k++;
-        let col = cols[Math.min(cols.length - 1, k)];
-        if (d === 0 && (top[x] < (top[x - 1] ?? 999) || top[x] < (top[x + 1] ?? 999) || (x & 3) === 0)) col = rimCol;
-        else if (d < 3 && top[x] < dirtTop - baseH - 3 && (x & 1)) col = cols[0];
-        else if ((x * 7 + (yy >> 2)) % 11 === 0) col = cols[2];
-        px(ctx, x, yy, col);
-      }
-      if (outline) px(ctx, x, top[x] - 1, outline);
-    }
-    return top;
   };
 
-  // back row: taller, lit by the moon
-  row(15, 4, Math.floor(W * 0.32), 15, ['#1C5430', '#123E22', '#0A2C18'], '#3C7C48', '#06140C');
+  // thatch: a solid dark mat so nothing behind the grass shows its bottom edge
+  for (let x = 0; x < W; x++) {
+    const t = Math.round(dirtTop - (17 + 3 * Math.sin(x * 0.09 + 1) + 2 * Math.sin(x * 0.23) + r() * 3));
+    px(ctx, x, t, '#0C2A16', 1, dirtTop - t);
+    px(ctx, x, t - 1, '#06140C');
+  }
+  // back blades, tall and moonlit
+  layer(Math.floor(W * 0.22), 14, 36, ['#0C3018', '#14482A', '#24603A'], '#4C8C50');
 
-  // tombstones half sunk between the rows
+  // tombstones half sunk between the layers
   const stones = Math.max(2, Math.round(W / 90));
   for (let i = 0; i < stones; i++) {
     const x = Math.round((W / stones) * (i + 0.3 + r() * 0.4));
-    drawArt(ctx, r() < 0.65 ? TOMBSTONE : CROSS, PROP_PAL, x, dirtTop - 19 - Math.floor(r() * 3));
+    drawArt(ctx, r() < 0.65 ? TOMBSTONE : CROSS, PROP_PAL, x, dirtTop - 17 - Math.floor(r() * 3));
   }
 
-  // front row: shorter and darker
-  row(7, 2, Math.floor(W * 0.3), 8, ['#0E3420', '#0A2818', '#061C10'], '#24603A', '#04100A');
+  // mid and front blades get shorter and darker
+  layer(Math.floor(W * 0.2), 8, 24, ['#0A2614', '#103A20', '#1C5430'], '#38784A');
+  // dark band where the blades meet the dirt
+  for (let x = 0; x < W; x++) {
+    const t = Math.round(dirtTop - (6 + 2 * Math.sin(x * 0.17) + r() * 2));
+    px(ctx, x, t, '#061A0C', 1, dirtTop - t);
+  }
+  layer(Math.floor(W * 0.16), 5, 13, ['#061A0C', '#0C2C16', '#14401F'], '#24603A');
 
   // dirt with fallen autumn leaves
   px(ctx, 0, dirtTop, '#2A140A', W, H - dirtTop);

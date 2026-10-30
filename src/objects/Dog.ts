@@ -67,7 +67,7 @@ export class Dog {
     w.setTexture('dogJump').setOrigin(0.5, 1);
     await seq.tween({ targets: w, x: w.x + 16, y: L.walkY - 30, duration: 320, ease: 'Quad.easeOut' });
     w.setTexture('dogDive').setOrigin(0.5, 1).setDepth(DEPTH.dogPop);
-    await seq.tween({ targets: w, x: w.x + 6, y: L.grassTop + 30, duration: 300, ease: 'Quad.easeIn' });
+    await seq.tween({ targets: w, x: w.x + 6, y: L.dirtTop + 20, duration: 340, ease: 'Quad.easeIn' });
     this.hide();
     this.seq = null;
   }

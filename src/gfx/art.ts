@@ -420,7 +420,7 @@ export const DOG_JUMP: Record<string, Art> = {
 
 // ---- front view: a ghost-sheet hood with an oval face opening ------------
 const FW = 32;
-const FH = 30;
+const FH = 56; // the sheet runs well below the grass line
 const EAR_L: Art = ['.KKKK.', 'KpPPPK', 'KpPPPK', '.KpPK.', '..KK..'];
 const EAR_R: Art = ['.KKKK.', 'KTTTTK', 'KRRTBK', '.KRBK.', '..KK..'];
 
@@ -489,7 +489,7 @@ function frontFrame(face: Art): Art {
   const inGhost = (x: number, y: number) => {
     const dx = x + 0.5 - cx;
     if (y < 13) return dx * dx + (y + 0.5 - 13) ** 2 <= 13.4 * 13.4;
-    return Math.abs(dx) <= 13.4 + (y - 13) * 0.12;
+    return Math.abs(dx) <= Math.min(15.4, 13.4 + (y - 13) * 0.12);
   };
   const inFace = (x: number, y: number) => ((x + 0.5 - cx) / 9.2) ** 2 + ((y + 0.5 - 14.8) / 8.6) ** 2 <= 1;
   for (let y = 0; y < FH; y++)
@@ -505,7 +505,7 @@ function frontFrame(face: Art): Art {
       if (ax > 11.5) c = 'G';
       if (ax > 12.6 && y > 16) c = 'g';
       if (y > 22 && ax < 9 && inFace(x, y - 2)) c = 'G';
-      if (y > 24 && (x === 9 || x === 22)) c = 'G';
+      if (y > 24 && (x === 9 || x === 22 || (y > 38 && (x === 5 || x === 26)))) c = 'G';
       g[y][x] = c;
     }
   // outlines: outside the ghost and around the face opening

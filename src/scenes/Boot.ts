@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import * as A from '../gfx/art';
 import { addFrames, addArt, makeCanvas, artSize, type Art } from '../gfx/pixel';
 import { registerFonts } from '../gfx/font';
-import { paintMoon, paintFog } from '../gfx/background';
+import { paintMoon, paintFog, paintClouds } from '../gfx/background';
 
 /** Glowing-eye anchor points for each duck frame, relative to frame top-left. */
 export const EYES: Record<string, { x: number; y: number }[]> = {};
@@ -94,6 +94,8 @@ export class BootScene extends Phaser.Scene {
     this.textures.addCanvas('moon', paintMoon());
     this.textures.addCanvas('fog', paintFog(256, 24, 9, '#8C7CC8'));
     this.textures.addCanvas('fog2', paintFog(256, 20, 21, '#C8C0F0'));
+    this.textures.addCanvas('clouds', paintClouds(320, 20, 4));
+    this.textures.addCanvas('cloudsHi', paintClouds(288, 16, 17, '#140C34', '#4C3C88', '#0E0828'));
 
     const fr = (key: string, ...names: string[]) => names.map((frame) => ({ key, frame }));
     this.anims.create({ key: 'dogWalk', frames: fr('dogSide', 'walk0', 'walk1'), frameRate: 6, repeat: -1 });

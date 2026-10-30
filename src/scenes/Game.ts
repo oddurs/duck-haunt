@@ -397,7 +397,7 @@ export class GameScene extends Phaser.Scene {
       for (let k = 0; k < per; k++) {
         const kind = this.pickKind();
         const x = L.W * (0.2 + Math.random() * 0.6);
-        const d = new Duck(this, kind, x, L.duckFloor + 14, DUCK_KINDS[kind].speed * mult, L);
+        const d = new Duck(this, kind, x, L.dirtTop - 8, DUCK_KINDS[kind].speed * mult, L);
         d.onTrail = (tx, ty, c) => this.emit(tx + (Math.random() * 4 - 2), ty, c, 0, -6, 0.5);
         this.targets.push(d);
       }

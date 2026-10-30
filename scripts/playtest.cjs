@@ -20,7 +20,7 @@ const { chromium } = require('playwright');
       const t=(g.targets||[]).filter(t=>t.alive).map(t=>(${toCss})(t.x,t.y));
       return {phase:g.phase,t,round:g.round,score:g.score,shots:g.shots}})()`);
     const el = (Date.now() - t0) / 1000;
-    if (info && info.phase === 'intro' && el > 3 && el < 4) await page.touchscreen.tap(50, 300); // skip once
+    if (!process.env.NOSKIP && info && info.phase === "intro" && el > 3 && el < 4) await page.touchscreen.tap(50, 300); // skip once
     if (info && info.phase === 'flying' && info.t.length && Date.now() - lastShotAt > 700) {
       const [x, y] = info.t[0];
       const miss = Math.random() > +acc;

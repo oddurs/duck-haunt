@@ -269,123 +269,134 @@ export const DUCK_KINDS: DuckKind[] = [
 ];
 
 // ------------------------------------------------------------------ DOG --
-// An English bulldog wearing a ghost bedsheet.
-// K outline  W sheet  G sheet shadow  T fawn fur  B fur shade  N nose
-// O eye  I eye shine  F fang  P tongue  M mouth  E ear (inner pink)
+// Norm: a white English bulldog with a brown patch over his left eye, a black
+// muzzle with droopy jowls, an underbite and one snaggletooth - wearing a
+// bedsheet-ghost hood.
+// K outline  W sheet  G sheet shadow  g deep shadow
+// T white fur  B fur shade  P brown patch  p dark patch  N black muzzle
+// n muzzle grey  O eye  I eye shine  F tooth  R pink skin  M mouth  L tongue
 
 export const DOG_PAL: Palette = {
-  K: NES.black,
-  W: NES.white,
-  G: NES.gray1,
-  g: '#9C9CB4',
-  T: '#F0B070',
-  B: '#C07028',
-  N: '#2C1C1C',
-  O: NES.black,
+  K: '#0C0814',
+  W: '#F0F0FC',
+  G: '#B8B8E0',
+  g: '#8C88B8',
+  T: '#FCF8EC',
+  B: '#E8C8BC',
+  P: '#7C4428',
+  p: '#4C2414',
+  N: '#24202C',
+  n: '#4C4858',
+  O: '#100804',
   I: NES.white,
-  F: NES.white,
-  P: NES.rose,
-  M: '#5C0C0C',
-  E: NES.rose,
+  F: '#F8F0C8',
+  R: '#F0A8B0',
+  M: '#5C0C14',
+  L: NES.rose,
 };
 
-// Side view, facing right. Shared head/sheet, legs differ per frame.
-const DOG_SIDE_TOP: Art = [
-  '.....................KTK..............',
-  '.....................KTTKKKKKK........',
-  '......................KKWWWWWWKK......',
-  '.....................KWWWWWWWWWWK.....',
-  '....................KWWWWWWWWWWWWK....',
-  '...................KWWWWWWWWKKKWWWK...',
-  '...................KWWWWWWWKOIOKWWK...',
-  '..........KKKKKKKKKWWWWWWWWKOOOKWWK...',
-  '........KKWWWWWWWWWWWWWWWWWWKKKWWWKKK.',
-  '.......KWWWWWWWWWWWWWWWWWWWWWWWWWKTNNK',
-  '......KWWWWWWWWWWWWWWWWWWWWWWWWWKTTNNK',
-  '...K.KWWWWWWWWWWWWWWWWWWWWWWWWWKTBTTTK',
-  '..KTKWWWWWWWWWWWWWWWWWWWWWWWWWWKTTTBTK',
-  '...KWWWWWWWWWWWWWWWWWWWWWWWWWWKTTKKFKK',
-  '...KGWWWWWWWWWWWWWWWWWWWWWWWWGKBTTTTK.',
-  '...KGGWWWWWWWWWWWWWWWWWWWWWWGGKBBBBK..',
-  '...KGGGWWWWWWWWWWWWWWWWWWWWGGGGKKKK...',
-  '...KgGGGGWWWWWWWWWWWWWWWWGGGGGgK......',
-];
+const pad = (art: Art, w: number): Art => art.map((r) => r.padEnd(w, '.'));
 
-export const DOG_SIDE: Record<string, Art> = {
-  walk0: [
-    ...DOG_SIDE_TOP,
-    '....KgKGGGGGKGGGGGGGGGKGGGGGgK........',
-    '.....KK.KKGKK.KKGGGKKK.KKGKK..........',
-    '.......KTTK..KTTK..KTTK..KTTK.........',
-    '.......KTBK..KTBK..KTBK..KTBK.........',
-    '.......KKKK..KKKK..KKKK..KKKK.........',
+// Side view, facing right. The hood ends at the brow; his face pokes out.
+const DOG_SIDE_TOP: Art = pad(
+  [
+    '.....................KKK..............',
+    '....................KTTRK.............',
+    '.....................KKTWKKKKK........',
+    '.....................KWWWWWWWWKK......',
+    '....................KWWWWWWWWWWWK.....',
+    '...................KWWWWWWWWWWKTTK....',
+    '...................KWWWWWWWWWKTTTTK...',
+    '..........KKKKKKKKKWWWWWWWWWKTKOTTK...',
+    '........KKWWWWWWWWWWWWWWWWWWKTTKTTKK..',
+    '.......KWWWWWWWWWWWWWWWWWWWWKTTTTnNNK.',
+    '......KWWWWWWWWWWWWWWWWWWWWWWKTTnNNNNK',
+    '...K.KWWWWWWWWWWWWWWWWWWWWWWWKTnnnNNK.',
+    '..KTKWWWWWWWWWWWWWWWWWWWWWWWWKBnnnnnK.',
+    '...KWWWWWWWWWWWWWWWWWWWWWWWWWKBnFKKKK.',
+    '...KGWWWWWWWWWWWWWWWWWWWWWWWGKnnnnnK..',
+    '...KGGWWWWWWWWWWWWWWWWWWWWWGGKnNnnK...',
+    '...KGGGWWWWWWWWWWWWWWWWWWWWGGGGKKKK...',
+    '...KgGGGGWWWWWWWWWWWWWWWWGGGGGgK......',
   ],
-  walk1: [
-    ...DOG_SIDE_TOP,
-    '....KgGGKGGGGGGKGGGGGGGGKGGGgK........',
-    '.....KKK.KKGKK.KKGGKK.KKKGKK..........',
-    '........KTTK..KTTK..KTTK.KTTK.........',
-    '.......KTBK..KTBK..KTBK..KTBK.........',
-    '.......KKKK..KKKK..KKKK..KKKK.........',
-  ],
-};
+  38,
+);
 
-const sniff = (twitch: boolean): Art => [
-  '......................................',
-  '......................................',
-  '......................................',
-  '......................................',
-  '......................................',
-  '..........KKKKKKKKKKKKKK..............',
-  '........KKWWWWWWWWWWWWWWKK..KTK.......',
-  '.......KWWWWWWWWWWWWWWWWWWKKTTKK......',
-  '......KWWWWWWWWWWWWWWWWWWWWWKKWWWK....',
-  '.....KWWWWWWWWWWWWWWWWWWWWWWWWWWWWK...',
-  '...K.KWWWWWWWWWWWWWWWWWWWWWWWKKKWWK...',
-  '..KTKWWWWWWWWWWWWWWWWWWWWWWWKOIOKWWK..',
-  '...KWWWWWWWWWWWWWWWWWWWWWWWWKOOOKWWK..',
-  '...KGWWWWWWWWWWWWWWWWWWWWWWWWKKKWWWKKK',
-  twitch ? '...KGGWWWWWWWWWWWWWWWWWWWWWWWWWWWKTNNK' : '...KGGWWWWWWWWWWWWWWWWWWWWWWWWWWWKTTNK',
-  twitch ? '...KGGGWWWWWWWWWWWWWWWWWWWWWWWWWKTTTTK' : '...KGGGWWWWWWWWWWWWWWWWWWWWWWWWWKTTTNK',
-  '...KgGGGGWWWWWWWWWWWWWWWGGGGGGGKTBTTTK',
-  twitch ? '....KgGGKGGGGGGKGGGGGGGGKGGGgKKTTKFKK.' : '....KgKGGGGGKGGGGGGGGGKGGGGGgKKTTKFKK.',
-  twitch ? '.....KKK.KKGKK.KKGGKK.KKKGKK..KKKKK...' : '.....KK.KKGKK.KKGGGKKK.KKGKK..KKKKK...',
+const LEGS0: Art = [
+  '....KgKGGGGGKGGGGGGGGGKGGGGGgK........',
+  '.....KK.KKGKK.KKGGGKKK.KKGKK..........',
   '.......KTTK..KTTK..KTTK..KTTK.........',
   '.......KTBK..KTBK..KTBK..KTBK.........',
   '.......KKKK..KKKK..KKKK..KKKK.........',
 ];
+const LEGS1: Art = [
+  '....KgGGKGGGGGGKGGGGGGGGKGGGgK........',
+  '.....KKK.KKGKK.KKGGKK.KKKGKK..........',
+  '........KTTK..KTTK..KTTK.KTTK.........',
+  '.......KTBK..KTBK..KTBK..KTBK.........',
+  '.......KKKK..KKKK..KKKK..KKKK.........',
+];
 
-// Nose to the ground.
-export const DOG_SNIFF: Record<string, Art> = {
-  sniff0: sniff(false),
-  sniff1: sniff(true),
+export const DOG_SIDE: Record<string, Art> = {
+  walk0: [...DOG_SIDE_TOP, ...LEGS0],
+  walk1: [...DOG_SIDE_TOP, ...LEGS1],
 };
+
+/** Head bob for sniffing: the face (cols >= 28) drops by `dy` rows. */
+function headDown(art: Art, dy: number): Art {
+  const h = art.length;
+  return art.map((row, y) =>
+    [...row]
+      .map((c, x) => {
+        if (x < 29) return c;
+        const sy = y - dy;
+        if (sy < 0) return '.';
+        return art[sy][x];
+      })
+      .join(''),
+  ).slice(0, h);
+}
+
+export const DOG_SNIFF: Record<string, Art> = {
+  sniff0: headDown([...DOG_SIDE_TOP, ...LEGS0], 2),
+  sniff1: headDown([...DOG_SIDE_TOP, ...LEGS1], 3),
+};
+
+const recolor = (art: Art, rows: [number, number], fromCol: number, map: Record<string, string>): Art =>
+  art.map((r, y) =>
+    y < rows[0] || y > rows[1] ? r : [...r].map((c, x) => (x >= fromCol && map[c] ? map[c] : c)).join(''),
+  );
 
 // Leaping into the grass.
 export const DOG_JUMP: Record<string, Art> = {
-  jump: [
-    '...........................KKKKK......',
-    '.........................KKWWWWWK.....',
-    '........................KWWWWWWWWK....',
-    '.......................KWWWWKKKWWK....',
-    '......................KWWWWKOIOKWK....',
-    '.....................KWWWWWKOOOKWK....',
-    '...................KKWWWWWWWKKKWWKKK..',
-    '.................KKWWWWWWWWWWWWWKTTKK.',
-    '...............KKWWWWWWWWWWWWWWKTTTNK.',
-    '.............KKWWWWWWWWWWWWWWWKTBTMKK.',
-    '...........KKWWWWWWWWWWWWWWWWGKTTKFK..',
-    '.........KKWWWWWWWWWWWWWWWWGGKKKKKK...',
-    '.......KKWWWWWWWWWWWWWWWGGGGGKKTTK....',
-    '..K..KKWWWWWWWWWWWWWWGGGGGgKKTTBK.....',
-    '.KTKKWWWWWWWWWWWWGGGGGGGgKK.KKKK......',
-    '..KWWWWWWWWWGGGGGGGGgKKKK.............',
-    '..KGGWWGGGGGGGgKKKKK..................',
-    '..KgGGGGgKKKKK........................',
-    '.KTTKKKKKTTK..........................',
-    '.KTBK...KTBK..........................',
-    '.KKKK...KKKK..........................',
-  ],
+  jump: recolor(
+    [
+      '...........................KKKKK......',
+      '.........................KKWWWWWK.....',
+      '........................KWWWWWWWWK....',
+      '.......................KWWWWWWKTTK....',
+      '......................KWWWWWWKTOTK....',
+      '.....................KWWWWWWWKTTTK....',
+      '...................KKWWWWWWWWKTTTKKK..',
+      '.................KKWWWWWWWWWWWKTTnNK..',
+      '...............KKWWWWWWWWWWWWWKTnNNK..',
+      '.............KKWWWWWWWWWWWWWWWKnnnMKK.',
+      '...........KKWWWWWWWWWWWWWWWWGKnnKFK..',
+      '.........KKWWWWWWWWWWWWWWWWGGKKKKKK...',
+      '.......KKWWWWWWWWWWWWWWWGGGGGKKTTK....',
+      '..K..KKWWWWWWWWWWWWWWGGGGGgKKTTBK.....',
+      '.KTKKWWWWWWWWWWWWGGGGGGGgKK.KKKK......',
+      '..KWWWWWWWWWGGGGGGGGgKKKK.............',
+      '..KGGWWGGGGGGGgKKKKK..................',
+      '..KgGGGGgKKKKK........................',
+      '.KTTKKKKKTTK..........................',
+      '.KTBK...KTBK..........................',
+      '.KKKK...KKKK..........................',
+    ],
+    [99, 99],
+    0,
+    {},
+  ),
   // Rear view diving down behind the grass.
   dive: [
     '.........KKKKKKKKKK.........',
@@ -407,102 +418,122 @@ export const DOG_JUMP: Record<string, Art> = {
   ],
 };
 
-// Front view, rising out of the grass. Ears poke through holes in the sheet.
-const DOG_FRONT_HEAD_TOP: Art = [
-  '...........KKKKKKKKKK...........',
-  '.........KKWWWWWWWWWWKK.........',
-  '.......KKWWWWWWWWWWWWWWKK.......',
-  '....KK.KWWWWWWWWWWWWWWWWK.KK....',
-  '...KTEKWWWWWWWWWWWWWWWWWWKETK...',
-  '...KTTKWWWWWWWWWWWWWWWWWWKTTK...',
-  '....KKWWWWWWWWWWWWWWWWWWWWKK....',
+// ---- front view: a ghost-sheet hood with an oval face opening ------------
+const FW = 32;
+const FH = 30;
+const EAR_L: Art = ['.KKKK.', 'KpPPPK', 'KpPPPK', '.KpPK.', '..KK..'];
+const EAR_R: Art = ['.KKKK.', 'KTTTTK', 'KRRTBK', '.KRBK.', '..KK..'];
+
+// 20x18 face blocks, placed at (6, 6). Only the oval opening shows.
+const EYES_OPEN = [
+  'TTTTTTTTTTTTTTTTTTTT',
+  'TTTTPPPTTTTTTTTTTTTT',
+  'TTTPPPPPTTTBTTTTTTTT',
+  'TTPPPPPPPTTTTTTTBTTT',
+  'TTPPPPPPPTTTTTTTTTTT',
+  'TTPPOIOPPTTTTTOIOTTT',
+  'TTPPOOOPPTTTTTOOOTTT',
+  'TTTpPPPPBTBBTBTTTTTT',
+];
+const EYES_SHUT = [
+  'TTTTTTTTTTTTTTTTTTTT',
+  'TTTTPPPTTTTTTTTTTTTT',
+  'TTTPPPPPTTTBTTTTTTTT',
+  'TTPPPPPPPTTTTTTTBTTT',
+  'TTPPPPPPPTTTTTTTTTTT',
+  'TTPPKKKPPTTTTTKKKTTT',
+  'TTPKPPPKPTTTTKTTTKTT',
+  'TTTpPPPPBTBBTBTTTTTT',
+];
+const NOSE = ['TTTTTTKKNNNNKKTTTTTT', 'TTTTTKNNNNNNNNKTTTTT', 'TTTTTTKNNnnNNKTTTTTT'];
+const MOUTH_SHUT = [
+  'TTTnTTTTTKKTTTTTnTTT',
+  'TTnNNNFKKKKKKKKNNnTT',
+  'TnNNNKFFKFFKFFKKNNnT',
+  'TnNNNKRRRRRRRRRKNNnT',
+  'nNNNNNKRRRRRRRKNNNNn',
+  'nNNNNNNKKKKKKKNNNNNn',
+  'TnNNNNKTTTTTTKNNNNnT',
+];
+const MOUTH_GRIN = [
+  'TTTnTTTTTKKTTTTTnTTT',
+  'TTnNNNFKKKKKKKKNNnTT',
+  'TnNNNKFFKFFKFFKKNNnT',
+  'TnNNNKRRKLLLLKRKNNnT',
+  'nNNNNNKRKLLLLKKNNNNn',
+  'nNNNNNNKKLLLLKNNNNNn',
+  'TnNNNNKTTKKKKTNNNNnT',
+];
+const MOUTH_LAUGH0 = [
+  'TTTnTTKKKKKKKKTTnTTT',
+  'TTnNNKMMMMMMMMKNNnTT',
+  'TnNNKMMLLLLLLMMKNNnT',
+  'TnNNKMLLLLLLLLMKNNnT',
+  'nNNNKFFKFFKFFKFKNNNn',
+  'nNNNNKRRRRRRRRKNNNNn',
+  'TnNNNNKKKKKKKKNNNNnT',
+];
+const MOUTH_LAUGH1 = [
+  'TTTnTTTTTKKTTTTTnTTT',
+  'TTnNNNKKKKKKKKKNNnTT',
+  'TnNNNKMMLLLLMMKNNNnT',
+  'TnNNKMMLLLLLLMMKNNnT',
+  'nNNNKFFKFFKFFKFKNNNn',
+  'nNNNNKRRRRRRRRKNNNNn',
+  'TnNNNNKKKKKKKKNNNNnT',
 ];
 
-const DOG_FRONT_BODY: Art = [
-  '..KWWWWWWWWWWWWWWWWWWWWWWWWWWK..',
-  '.KWWWWWWWWWWWWWWWWWWWWWWWWWWWWK.',
-  '.KGWWWWWWWWWWWWWWWWWWWWWWWWWWGK.',
-  'KGGWWWWWWWWWWWWWWWWWWWWWWWWWWGGK',
-  'KGGGWWWWWWWWWWWWWWWWWWWWWWWWGGGK',
-  'KgGGWWWWWWWWWWWWWWWWWWWWWWWWGGgK',
-  'KgGGGWWWWWWWWWWWWWWWWWWWWWWGGGgK',
-  'KgGGGWWWWWWWWWWWWWWWWWWWWWWGGGgK',
-  'KgGGGGWWWWWWWWWWWWWWWWWWWWGGGGgK',
-];
+function frontFrame(face: Art): Art {
+  const g: string[][] = Array.from({ length: FH }, () => new Array(FW).fill('.'));
+  const cx = 15.5;
+  const inGhost = (x: number, y: number) => {
+    const dx = x + 0.5 - cx;
+    if (y < 13) return dx * dx + (y + 0.5 - 13) ** 2 <= 13.4 * 13.4;
+    return Math.abs(dx) <= 13.4 + (y - 13) * 0.12;
+  };
+  const inFace = (x: number, y: number) => ((x + 0.5 - cx) / 9.2) ** 2 + ((y + 0.5 - 14.8) / 8.6) ** 2 <= 1;
+  for (let y = 0; y < FH; y++)
+    for (let x = 0; x < FW; x++) {
+      if (!inGhost(x, y)) continue;
+      if (inFace(x, y)) {
+        g[y][x] = face[y - 6]?.[x - 6] ?? 'T';
+        continue;
+      }
+      const ax = Math.abs(x + 0.5 - cx);
+      // folds of the sheet + shadow cast under the face opening
+      let c = 'W';
+      if (ax > 11.5) c = 'G';
+      if (ax > 12.6 && y > 16) c = 'g';
+      if (y > 22 && ax < 9 && inFace(x, y - 2)) c = 'G';
+      if (y > 24 && (x === 9 || x === 22)) c = 'G';
+      g[y][x] = c;
+    }
+  // outlines: outside the ghost and around the face opening
+  const out = g.map((r) => r.slice());
+  for (let y = 0; y < FH; y++)
+    for (let x = 0; x < FW; x++) {
+      const n4 = [
+        [x + 1, y],
+        [x - 1, y],
+        [x, y + 1],
+        [x, y - 1],
+      ];
+      if (g[y][x] === '.' && n4.some(([a, b]) => g[b]?.[a] && g[b][a] !== '.')) out[y][x] = 'K';
+      else if (g[y][x] !== '.' && !inFace(x, y) && n4.some(([a, b]) => b < FH && a >= 0 && a < FW && inFace(a, b) && inGhost(a, b)))
+        out[y][x] = 'K';
+    }
+  const stamp = (art: Art, ox: number, oy: number) =>
+    art.forEach((r, y) => [...r].forEach((c, x) => c !== '.' && (out[oy + y][ox + x] = c)));
+  stamp(EAR_L, 1, 3);
+  stamp(EAR_R, 25, 3);
+  return out.map((r) => r.join(''));
+}
 
 export const DOG_FRONT: Record<string, Art> = {
-  idle: [
-    ...DOG_FRONT_HEAD_TOP,
-    '....KWWWWKKKKWWWWWWKKKKWWWWK....',
-    '...KWWWWKOIOOKWWWWKOIOOKWWWWK...',
-    '...KWWWWKOOOOKWWWWKOOOOKWWWWK...',
-    '...KWWWWWKKKKWWWWWWKKKKWWWWWK...',
-    '...KWWWWKTTTTTTTTTTTTTTKWWWWK...',
-    '..KWWWWKTTBTTTKKKKTTTBTTKWWWWK..',
-    '..KWWWKTTTTTTKNNNNKTTTTTTKWWWK..',
-    '..KWWWKTTBTTTTKNNKTTTTBTTKWWWK..',
-    '..KWWWKTTTTTTTTKKTTTTTTTTKWWWK..',
-    '..KWWWKTTKKKKKKKKKKKKKKTTKWWWK..',
-    '..KWWWKTKFKTTTTTTTTTTKFKTKWWWK..',
-    '..KWWWWKTTTTTTTTTTTTTTTTKWWWWK..',
-    '..KWWWWWKKTTTTTTTTTTTTKKWWWWWK..',
-    '..KWWWWWWWKKKKKKKKKKKKWWWWWWWK..',
-    ...DOG_FRONT_BODY,
-  ],
-  laugh0: [
-    ...DOG_FRONT_HEAD_TOP,
-    '....KWWWWWWWWWWWWWWWWWWWWWWK....',
-    '...KWWWWWKKKWWWWWWWWKKKWWWWWK...',
-    '...KWWWWKOWWOKWWWWKOWWOKWWWWK...',
-    '...KWWWWWWWWWWWWWWWWWWWWWWWWK...',
-    '...KWWWWKTTTTTTTTTTTTTTKWWWWK...',
-    '..KWWWWKTTBTTTKKKKTTTBTTKWWWWK..',
-    '..KWWWKTTTTTTKNNNNKTTTTTTKWWWK..',
-    '..KWWWKTTKKKKKKNNKKKKKKTTKWWWK..',
-    '..KWWWKTKMMMMMMKKMMMMMMKTKWWWK..',
-    '..KWWWKTKMMMMMMMMMMMMMMKTKWWWK..',
-    '..KWWWKTKMMMPPPPPPPPMMMKTKWWWK..',
-    '..KWWWKTKFMPPPPPPPPPPMFKTKWWWK..',
-    '..KWWWWKTKFKKKKKKKKKKFKTKWWWWK..',
-    '..KWWWWWKKTTTTTTTTTTTTKKWWWWWK..',
-    ...DOG_FRONT_BODY,
-  ],
-  laugh1: [
-    ...DOG_FRONT_HEAD_TOP,
-    '....KWWWWWWWWWWWWWWWWWWWWWWK....',
-    '...KWWWWWKKKWWWWWWWWKKKWWWWWK...',
-    '...KWWWWKOWWOKWWWWKOWWOKWWWWK...',
-    '...KWWWWWWWWWWWWWWWWWWWWWWWWK...',
-    '...KWWWWKTTTTTTTTTTTTTTKWWWWK...',
-    '..KWWWWKTTBTTTKKKKTTTBTTKWWWWK..',
-    '..KWWWKTTTTTTKNNNNKTTTTTTKWWWK..',
-    '..KWWWKTTTTTTTKNNKTTTTTTTKWWWK..',
-    '..KWWWKTTKKKKKKKKKKKKKKTTKWWWK..',
-    '..KWWWKTKMMMMMMMMMMMMMMKTKWWWK..',
-    '..KWWWKTKFMMPPPPPPPPMMFKTKWWWK..',
-    '..KWWWWKTKFKKKKKKKKKKFKTKWWWWK..',
-    '..KWWWWWKKTTTTTTTTTTTTKKWWWWWK..',
-    '..KWWWWWWWKKKKKKKKKKKKWWWWWWWK..',
-    ...DOG_FRONT_BODY,
-  ],
-  happy: [
-    ...DOG_FRONT_HEAD_TOP,
-    '....KWWWWKKKKWWWWWWKKKKWWWWK....',
-    '...KWWWWKOIOOKWWWWKOIOOKWWWWK...',
-    '...KWWWWKOOOOKWWWWKOOOOKWWWWK...',
-    '...KWWWWWKKKKWWWWWWKKKKWWWWWK...',
-    '...KWWWWKTTTTTTTTTTTTTTKWWWWK...',
-    '..KWWWWKTTBTTTKKKKTTTBTTKWWWWK..',
-    '..KWWWKTTTTTTKNNNNKTTTTTTKWWWK..',
-    '..KWWWKTTBTTTTKNNKTTTTBTTKWWWK..',
-    '..KWWWKTTKTTTTTKKTTTTTKTTKWWWK..',
-    '..KWWWKTTTKKKKKKKKKKKKTTTKWWWK..',
-    '..KWWWKTKFKMMPPPPMMKKFKTTKWWWK..',
-    '..KWWWWKTKKKMPPPPMKKKKTTKWWWWK..',
-    '..KWWWWWKKTTKKKKKKTTTTKKWWWWWK..',
-    '..KWWWWWWWKKKKKKKKKKKKWWWWWWWK..',
-    ...DOG_FRONT_BODY,
-  ],
+  idle: frontFrame([...EYES_OPEN, ...NOSE, ...MOUTH_SHUT]),
+  laugh0: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_LAUGH0]),
+  laugh1: frontFrame([...EYES_SHUT, ...NOSE, ...MOUTH_LAUGH1]),
+  happy: frontFrame([...EYES_OPEN, ...NOSE, ...MOUTH_GRIN]),
 };
 
 // Sheet-covered arm with a paw, raised to hold a duck (right side).

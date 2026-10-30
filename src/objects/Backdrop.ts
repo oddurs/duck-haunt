@@ -20,6 +20,11 @@ export class Backdrop {
   private lanternGlow!: Phaser.GameObjects.Image;
   private windows: Phaser.GameObjects.Image[] = [];
   private owl: Phaser.GameObjects.Image[] = [];
+  private twinkles: Phaser.GameObjects.Image[] = [];
+  private leaves: { s: Phaser.GameObjects.Image; vy: number; ph: number; x0: number }[] = [];
+  private leafTimer = 1;
+  private treeX = 0;
+  private treeTop = 0;
   private bats: { s: Phaser.GameObjects.Sprite; vx: number; base: number; ph: number }[] = [];
   private keys: string[] = [];
   private batTimer = 3;
@@ -31,8 +36,8 @@ export class Backdrop {
     this.sky = s.add.image(0, 0, 'pix').setOrigin(0).setDepth(DEPTH.sky);
     this.blood = s.add.image(0, 0, 'pix').setOrigin(0).setDepth(DEPTH.sky).setAlpha(0);
     this.moon = s.add.image(0, 0, 'moon').setDepth(DEPTH.moon);
-    this.cloud = s.add.tileSprite(0, 0, 256, 24, 'fog').setOrigin(0, 0.5).setDepth(DEPTH.cloud).setTint(0x1a0e3a).setAlpha(0.9);
-    this.cloudHi = s.add.tileSprite(0, 0, 256, 24, 'fog2').setOrigin(0, 0.5).setDepth(DEPTH.cloud).setTint(0x2c1660).setAlpha(0.7);
+    this.cloud = s.add.tileSprite(0, 0, 256, 20, 'clouds').setOrigin(0, 0.5).setDepth(DEPTH.cloud);
+    this.cloudHi = s.add.tileSprite(0, 0, 256, 16, 'cloudsHi').setOrigin(0, 0.5).setDepth(DEPTH.cloud).setAlpha(0.85);
     this.land = s.add.image(0, 0, 'pix').setOrigin(0).setDepth(DEPTH.land);
     this.fogBack = s.add.tileSprite(0, 0, 256, 24, 'fog').setOrigin(0, 1).setDepth(DEPTH.fog).setAlpha(0.45);
     this.fore = s.add.image(0, 0, 'pix').setOrigin(0).setDepth(DEPTH.fore);
@@ -61,18 +66,28 @@ export class Backdrop {
     old.forEach((o) => s.textures.exists(o) && s.textures.remove(o));
 
     const m = moonPos(L);
-    this.moon.setPosition(m.x - 10, m.y);
-    this.cloud.setSize(L.W, 24).setPosition(0, m.y + 10);
-    this.cloudHi.setSize(L.W, 20).setPosition(0, Math.round(m.y * 0.45)).setVisible(m.y > 120);
+    this.moon.setPosition(m.x, m.y);
+    this.cloud.setSize(L.W, 20).setPosition(0, m.y + 9);
+    this.cloudHi.setSize(L.W, 16).setPosition(0, Math.round(m.y * 0.45)).setVisible(m.y > 110);
+    this.twinkles.forEach((t) => t.destroy());
+    this.twinkles = new Array(Math.round(L.W / 32)).fill(0).map(() =>
+      s.add
+        .image(Math.floor(Math.random() * L.W), Math.floor(Math.pow(Math.random(), 1.5) * L.horizon * 0.6), 'pix')
+        .setOrigin(0)
+        .setDisplaySize(1, 1)
+        .setDepth(DEPTH.sky),
+    );
     this.fogBack.setSize(L.W, 24).setPosition(0, L.horizon + 6);
     this.fogFront.setSize(L.W, 20).setPosition(0, L.dirtTop + 2);
-    this.lantern.setPosition(Math.round(L.W * 0.86), L.grassTop + 14);
+    this.lantern.setPosition(Math.round(L.W * 0.86), L.dirtTop - 8);
     this.lanternGlow.setPosition(this.lantern.x, this.lantern.y + 1);
 
     this.windows.forEach((w) => w.destroy());
     this.windows = land.windows.map((w) =>
       s.add.image(w.x, w.y, 'pix').setOrigin(0).setDisplaySize(2, 3).setTint(0xf8b800).setDepth(DEPTH.land),
     );
+    this.treeX = Math.round(L.W * 0.14);
+    this.treeTop = Math.round(L.horizon + 6 - Math.min(96, L.horizon * 0.55));
     this.owl.forEach((o) => o.destroy());
     this.owl = [0, 2].map((dx) =>
       s.add.image(land.owl.x + dx, land.owl.y, 'pix').setOrigin(0).setDisplaySize(1, 1).setTint(0xf8d878).setDepth(DEPTH.land),
@@ -90,6 +105,31 @@ export class Backdrop {
     this.fogBack.tilePositionX = -t * 5;
     this.fogFront.tilePositionX = t * 9;
     this.moon.y = moonPos(this.L).y + Math.round(Math.sin(t * 0.3));
+    this.twinkles.forEach((tw, i) => {
+      const v = Math.sin(t * (1.3 + i * 0.37) + i * 2.1);
+      tw.setTint(v > 0.6 ? 0xfcfcfc : v > -0.2 ? 0x8c84c8 : 0x3c3478);
+    });
+    // leaves drifting from the dead tree
+    this.leafTimer -= dt;
+    if (this.leafTimer < 0) {
+      this.leafTimer = 1.5 + Math.random() * 3;
+      const col = [0xa0602c, 0xc8843c, 0xe0a050, 0x8c3018][Math.floor(Math.random() * 4)];
+      const x0 = this.treeX - 20 + Math.random() * 40;
+      const img = this.scene.add.image(x0, this.treeTop + Math.random() * 20, 'pix').setOrigin(0).setDisplaySize(2, 1).setTint(col).setDepth(DEPTH.land + 0.5);
+      this.leaves.push({ s: img, vy: 9 + Math.random() * 6, ph: Math.random() * 6, x0 });
+    }
+    for (let i = this.leaves.length - 1; i >= 0; i--) {
+      const lf = this.leaves[i];
+      lf.ph += dt * 2.2;
+      lf.s.y += lf.vy * dt;
+      lf.x0 += dt * 6;
+      lf.s.x = Math.round(lf.x0 + Math.sin(lf.ph) * 5);
+      lf.s.setDisplaySize(Math.cos(lf.ph) > 0 ? 2 : 1, 1);
+      if (lf.s.y > this.L.dirtTop) {
+        lf.s.destroy();
+        this.leaves.splice(i, 1);
+      }
+    }
     // candle-flicker windows
     this.windows.forEach((w, i) => {
       const f = Math.sin(t * (3 + i) + i * 7) + Math.sin(t * 11.3 + i);
